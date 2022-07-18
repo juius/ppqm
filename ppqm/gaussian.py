@@ -263,13 +263,7 @@ def read_properties_sp(lines):
     Read Mulliken charges
     """
     properties = dict()
-
-    for line in lines:
-        if "SCF Done:  E(" in line:
-            scf_energy = float(line.split()[4]) * units.hartree_to_kcalmol
-            properties[COLUMN_SCF_ENERGY] = scf_energy
-            break
-
+    properties.update(get_scf_energy(lines))
     properties.update(get_mulliken_charges(lines))
 
     return properties
@@ -285,6 +279,18 @@ def read_properties_opt(lines):
     properties.update(get_mulliken_charges(lines))
 
     return properties
+
+def get_scf_energy(lines):
+    """Works for external energy calculations"""
+    energy_patterns = ["SCF Done:  E(", "Recovered energy="]
+    energy_idx = linesio.get_rev_indices_patterns(lines, energy_patterns)
+    for i, idx in enumerate(energy_idx):
+        if idx:
+            if i == 0:
+                scf_energy = float(lines[idx].split()[4]) * units.hartree_to_kcalmol
+            elif i == 1:
+                scf_energy = float(lines[idx].split()[2]) * units.hartree_to_kcalmol
+    return {COLUMN_SCF_ENERGY: scf_energy}
 
 def get_opt_structure(lines):
     """
