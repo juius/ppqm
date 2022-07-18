@@ -8,7 +8,7 @@ from tqdm import tqdm
 from ppqm import chembridge, constants, linesio, shell, units
 from ppqm.calculator import BaseCalculator
 
-G16_CMD = "g16"
+G16_CMD = "g16 <"
 G16_FILENAME = "_tmp_g16_input.com"
 
 _logger = logging.getLogger("g16")
