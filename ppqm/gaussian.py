@@ -187,7 +187,7 @@ def get_inputfile(atom_strs, coordinates, charge, spin, header, footer=None, **k
 
     inputstr += f"{charge}  {spin} \n"
     for atom_str, coord in zip(atom_strs, coordinates):
-        inputstr += f"{atom_str}  " + " ".join([str(x) for x in coord]) + "\n"
+        inputstr += f"{atom_str}  " + " ".join([f'{x:.8f}' for x in coord]) + "\n"
     inputstr += "\n"  # magic line
 
     if footer is not None:
