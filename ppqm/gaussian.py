@@ -15,6 +15,10 @@ _logger = logging.getLogger("g16")
 
 COLUMN_SCF_ENERGY = "scf_energy"
 COLUMN_CONVERGED = "is_converged"
+COLUMN_COORD = "coord"
+COLUMN_ATOMS = "atoms"
+COLUMN_FREQUENCIES = "frequencies"
+COLUMN_NORMAL_COORD = "normal_coords"
 COLUMN_MULIKEN_CHARGES = "mulliken charges"
 COLUMN_CM5_CHARGES = "cm5_charges"
 COLUMN_HIRSHFELD_CHARGES = "hirshfeld_charges"
@@ -225,8 +229,7 @@ def read_properties(lines, options):
     readers = []
 
     if "opt" in options:
-        raise NotImplementedError("not implemented opt properties parser")
-        # reader = read_properties_opt
+        readers.append(read_properties_opt)
     else:
         readers.append(read_properties_sp)
 
@@ -240,6 +243,9 @@ def read_properties(lines, options):
 
     if "nmr" in options:
         readers.append(get_nmr_shielding_constants)
+        
+    if "freq" in options:
+        readers.append(get_frequencies)
 
     # Get properties
     properties = dict()
@@ -270,7 +276,66 @@ def read_properties_sp(lines):
 
 
 def read_properties_opt(lines):
-    """ """
+    """
+    Read optimized energy, Mulliken charges, and optimized structure
+    """
+    properties = dict()
+    properties.update(get_scf_energy(lines))
+    properties.update(get_opt_structure(lines))
+    properties.update(get_mulliken_charges(lines))
+
+    return properties
+
+def get_opt_structure(lines):
+    """
+    Read optimized structure
+    """
+    opt_converged = False
+    opt_idx = linesio.get_indices(lines, "Stationary point found")
+    if len(opt_idx) > 0:
+        opt_converged = True
+
+    if opt_converged:
+        geom_idx = linesio.get_indices(lines, "Standard orientation:")
+        idx_coord = geom_idx[-1] # last geometry from last job
+        atoms = []
+        coords = []
+        n_atoms = int(lines[linesio.get_index(lines, "NAtoms=")].split()[1])
+        for i in range(idx_coord + 5, idx_coord + 5 + n_atoms):
+            line = lines[i]
+            atom, coord = parse_coordline(line)
+            atoms.append(atom)
+            coords.append(coord)
+
+        return {COLUMN_ATOMS: atoms, COLUMN_COORD: coords}
+    
+def get_frequencies(lines):
+    """
+    Read frequencies and normal coordinates
+    """
+    keywords = " Frequencies --"
+    start = linesio.get_indices(lines, keywords)
+    end = linesio.get_indices(lines, " - Thermochemistry -")
+    frequencies = []
+    normal_coordinates = []
+    for i in range(len(start)):
+        if i == len(start) - 1:
+            stop = end[0] - 2
+        else:
+            stop = start[i + 1] - 2
+        block = lines[start[i] : stop]
+        frequencies += list(map(float, block[0].split()[2:]))
+        freq1_coords = []
+        freq2_coords = []
+        freq3_coords = []
+        for line in block[5:]:
+            line = line.strip().split()
+            freq1_coords.append(list(map(float, line[2:5])))
+            freq2_coords.append(list(map(float, line[5:8])))
+            freq3_coords.append(list(map(float, line[8:11])))
+        normal_coordinates += [freq1_coords, freq2_coords, freq3_coords]
+
+    return {COLUMN_FREQUENCIES: frequencies, COLUMN_NORMAL_COORD: normal_coordinates}
 
 
 def get_mulliken_charges(lines):
