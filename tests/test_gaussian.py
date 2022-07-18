@@ -1,5 +1,6 @@
 from collections import ChainMap
 
+import numpy as np
 import pytest
 from context import G16_OPTIONS, RESOURCES
 
@@ -15,18 +16,21 @@ logfile_optfreq = RESOURCES / "gaussian/cnh5_optfreq.out"
 with open(logfile_optfreq) as f:
     lines_optfreq = f.readlines()
 
+
 def _get_options(tmpdir):
     g16_options = {"scr": tmpdir, "memory": 2}
     options_prime = ChainMap(g16_options, G16_OPTIONS)
     options_prime = dict(options_prime)
     return options_prime
 
+
 def test_get_optimized_structure():
     properties = gaussian.get_opt_structure(lines_optfreq)
     atoms = properties[gaussian.COLUMN_ATOMS]
     assert (atoms == np.array([6, 1, 1, 1, 7, 1, 1], dtype=int)).all()
     assert properties[gaussian.COLUMN_COORD] is not None
-    
+
+
 def test_get_frequencies():
     properties = gaussian.get_frequencies(lines_optfreq)
     assert properties[gaussian.COLUMN_FREQUENCIES] is not None
@@ -35,9 +39,10 @@ def test_get_frequencies():
     assert properties[gaussian.COLUMN_NORMAL_COORD] is not None
     assert len(properties[gaussian.COLUMN_NORMAL_COORD][0]) == 7
 
+
 @pytest.mark.parametrize("smiles, energy", TEST_ENERGIES)
 def test_axyzc_optimize(smiles, energy, tmpdir):
-    """ TODO: optimize not just SP """
+    """TODO: optimize not just SP"""
 
     g16_options = _get_options(tmpdir)
 
@@ -54,7 +59,7 @@ def test_axyzc_optimize(smiles, energy, tmpdir):
     )
 
     scf_energy = properties[gaussian.COLUMN_SCF_ENERGY]
-    assert pytest.approx(energy, 10 ** -4) == scf_energy
+    assert pytest.approx(energy, 10**-4) == scf_energy
 
 
 def test_parse_mulliken_charges():

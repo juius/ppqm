@@ -191,7 +191,7 @@ def get_inputfile(atom_strs, coordinates, charge, spin, header, footer=None, **k
 
     inputstr += f"{charge}  {spin} \n"
     for atom_str, coord in zip(atom_strs, coordinates):
-        inputstr += f"{atom_str}  " + " ".join([f'{x:.8f}' for x in coord]) + "\n"
+        inputstr += f"{atom_str}  " + " ".join([f"{x:.8f}" for x in coord]) + "\n"
     inputstr += "\n"  # magic line
 
     if footer is not None:
@@ -201,7 +201,7 @@ def get_inputfile(atom_strs, coordinates, charge, spin, header, footer=None, **k
 
 
 def get_header(options, **kwargs):
-    """ Write G16 header """
+    """Write G16 header"""
 
     header = f"%mem={kwargs.pop('memory')}gb\n"
     header += "# "
@@ -223,7 +223,7 @@ def get_header(options, **kwargs):
 
 
 def read_properties(lines, options):
-    """ Extract values from output depending on calculation options """
+    """Extract values from output depending on calculation options"""
 
     # Collect readers
     readers = []
@@ -243,7 +243,7 @@ def read_properties(lines, options):
 
     if "nmr" in options:
         readers.append(get_nmr_shielding_constants)
-        
+
     if "freq" in options:
         readers.append(get_frequencies)
 
@@ -280,6 +280,7 @@ def read_properties_opt(lines):
 
     return properties
 
+
 def get_scf_energy(lines):
     """Works for external energy calculations"""
     energy_patterns = ["SCF Done:  E(", "Recovered energy="]
@@ -292,6 +293,14 @@ def get_scf_energy(lines):
                 scf_energy = float(lines[idx].split()[2]) * units.hartree_to_kcalmol
     return {COLUMN_SCF_ENERGY: scf_energy}
 
+
+def parse_coordline(line):
+    line = line.split()
+    atom = int(line[1])
+    coord = [float(x) for x in line[-3:]]
+    return atom, coord
+
+
 def get_opt_structure(lines):
     """
     Read optimized structure
@@ -303,7 +312,7 @@ def get_opt_structure(lines):
 
     if opt_converged:
         geom_idx = linesio.get_indices(lines, "Standard orientation:")
-        idx_coord = geom_idx[-1] # last geometry from last job
+        idx_coord = geom_idx[-1]  # last geometry from last job
         atoms = []
         coords = []
         n_atoms = int(lines[linesio.get_index(lines, "NAtoms=")].split()[1])
@@ -314,7 +323,8 @@ def get_opt_structure(lines):
             coords.append(coord)
 
         return {COLUMN_ATOMS: atoms, COLUMN_COORD: coords}
-    
+
+
 def get_frequencies(lines):
     """
     Read frequencies and normal coordinates
@@ -345,7 +355,7 @@ def get_frequencies(lines):
 
 
 def get_mulliken_charges(lines):
-    """ Read Mulliken charges """
+    """Read Mulliken charges"""
     keywords = ["Mulliken charges:", "Sum of Mulliken charges"]
     start, stop = linesio.get_rev_indices_patterns(lines, keywords)
     mulliken_charges = [float(x.split()[-1]) for x in lines[start + 2 : stop]]
@@ -353,7 +363,7 @@ def get_mulliken_charges(lines):
 
 
 def get_hirsfeld_charges(lines):
-    """ Read Hirsfeld charges - run a NBO calculation"""
+    """Read Hirsfeld charges - run a NBO calculation"""
     keywords = ["Hirshfeld charges,", "Hirshfeld charges with"]
     start, stop = linesio.get_indices_patterns(lines, keywords)
     hirshfeld_charges = [float(line.split()[2]) for line in lines[start + 2 : stop - 1]]
@@ -362,7 +372,7 @@ def get_hirsfeld_charges(lines):
 
 
 def get_cm5_charges(lines):
-    """ Read CM5 charges - run a NBO calculation"""
+    """Read CM5 charges - run a NBO calculation"""
     keywords = ["Hirshfeld charges,", "Hirshfeld charges with"]
     start, stop = linesio.get_indices_patterns(lines, keywords)
     cm5_charges = [float(line.split()[-1]) for line in lines[start + 2 : stop - 1]]
@@ -408,7 +418,7 @@ def get_nbo_bond_orders(lines):
 
 
 def get_nmr_shielding_constants(lines):
-    """ Read GIAO NMR shielding constants """
+    """Read GIAO NMR shielding constants"""
     keywords = ["Magnetic shielding tensor (ppm):", "************"]
     start, stop = linesio.get_rev_indices_patterns(lines, keywords)
 
