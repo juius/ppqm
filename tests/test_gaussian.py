@@ -11,6 +11,9 @@ TEST_ENERGIES = [
     ("[NH4+]", 156.64505678634524),
 ]
 
+logfile_optfreq = RESOURCES / "gaussian/cnh5_optfreq.out"
+with open(logfile_optfreq) as f:
+    lines_optfreq = f.readlines()
 
 def _get_options(tmpdir):
     g16_options = {"scr": tmpdir, "memory": 2}
@@ -18,6 +21,19 @@ def _get_options(tmpdir):
     options_prime = dict(options_prime)
     return options_prime
 
+def test_get_optimized_structure():
+    properties = gaussian.get_opt_structure(lines_optfreq)
+    atoms = properties[gaussian.COLUMN_ATOMS]
+    assert (atoms == np.array([6, 1, 1, 1, 7, 1, 1], dtype=int)).all()
+    assert properties[gaussian.COLUMN_COORD] is not None
+    
+def test_get_frequencies():
+    properties = gaussian.get_frequencies(lines_optfreq)
+    assert properties[gaussian.COLUMN_FREQUENCIES] is not None
+    assert properties[gaussian.COLUMN_FREQUENCIES][0] == 327.696
+
+    assert properties[gaussian.COLUMN_NORMAL_COORD] is not None
+    assert len(properties[gaussian.COLUMN_NORMAL_COORD][0]) == 7
 
 @pytest.mark.parametrize("smiles, energy", TEST_ENERGIES)
 def test_axyzc_optimize(smiles, energy, tmpdir):
